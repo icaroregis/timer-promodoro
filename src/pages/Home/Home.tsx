@@ -67,16 +67,15 @@ export function Home() {
 
   function handleInterruptCycle() {
     setActiveCycleId(null);
-    setCycles(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      cycles.map((cycle: any) => {
+    setCycles((prevState) => {
+      return prevState.map((cycle) => {
         if (cycle.id === activeCycleId) {
           return { ...cycle, interruptedDate: new Date() };
         } else {
           return cycle;
         }
-      })
-    );
+      });
+    });
   }
 
   useEffect(() => {
@@ -84,16 +83,34 @@ export function Home() {
 
     if (activeCycle) {
       interval = setInterval(() => {
-        setAmountSecondsPassed(
-          differenceInSeconds(new Date(), activeCycle.startDate)
+        const secondsDifference = differenceInSeconds(
+          new Date(),
+          activeCycle.startDate
         );
+
+        if (secondsDifference >= totalSeconds) {
+          setCycles((prevState) => {
+            return prevState.map((cycle) => {
+              if (cycle.id === activeCycleId) {
+                return { ...cycle, finishedDate: new Date() };
+              } else {
+                return cycle;
+              }
+            });
+          });
+
+          setAmountSecondsPassed(totalSeconds);
+          clearInterval(interval);
+        } else {
+          setAmountSecondsPassed(secondsDifference);
+        }
       }, 1000);
     }
 
     return () => {
       clearInterval(interval);
     };
-  }, [activeCycle]);
+  }, [activeCycle, totalSeconds, activeCycleId]);
 
   useEffect(() => {
     if (activeCycle) {
