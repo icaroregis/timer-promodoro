@@ -1,18 +1,34 @@
-import { createContext, useState } from "react";
+import { createContext, useReducer, useState } from "react";
 import {
-  ICreateCycleData,
   ICycle,
+  ICreateCycleData,
   ICycleContextType,
   ICyclesContextProvidersProps,
 } from "./CycleContext.types";
+import {
+  InterruptCurrentCycleAction,
+  addNewCycleAction,
+  cyclesReducer,
+  markCurrentCycleAsFinishedAction,
+} from "../../reducers";
 
 export const CyclesContext = createContext({} as ICycleContextType);
 
 export function CyclesContextProvider({
   children,
 }: ICyclesContextProvidersProps) {
-  const [cycles, setCycles] = useState<ICycle[]>([]);
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
+  /*
+  useReducer =>
+  state: valor atual em tempo real da variável de ciclos.
+  action: ações que o usuário pode realizar para modificar o estado(cyles)
+  */
+  const [cyclesState, dispatch] = useReducer(cyclesReducer, {
+    cycles: [],
+    activeCycleId: null,
+  });
+
+  const { cycles, activeCycleId } = cyclesState;
+
   const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
@@ -22,15 +38,7 @@ export function CyclesContextProvider({
   }
 
   function markCurrentCycleAsFinished() {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, finishedDate: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
+    dispatch(markCurrentCycleAsFinishedAction());
   }
 
   function CreateNewCycle(data: ICreateCycleData) {
@@ -43,22 +51,12 @@ export function CyclesContextProvider({
       startDate: new Date(),
     };
 
-    setCycles((state) => [...state, newCycle]);
-    setActiveCycleId(id);
+    dispatch(addNewCycleAction(newCycle));
     setAmountSecondsPassed(0);
   }
 
   function InterruptCurrentCycle() {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, interruptedDate: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
-    setActiveCycleId(null);
+    dispatch(InterruptCurrentCycleAction());
   }
 
   return (
